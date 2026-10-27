@@ -1,0 +1,5 @@
+mutagen>=1.45
+requests>=2.25
+Pillow>=9.0
+anthropic>=1.0
+pytest>=7

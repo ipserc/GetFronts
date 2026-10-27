@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "getfronts"
+dynamic = ["version"]
+description = "Descarga las carátulas de los álbumes a partir de los metadatos de las pistas"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mutagen>=1.45",
+    "requests>=2.25",
+    "Pillow>=9.0",
+    "anthropic>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+getfronts = "getfronts.cli:main"
+
+[tool.setuptools]
+packages = ["getfronts", "getfronts.sources"]
+
+[tool.setuptools.dynamic]
+version = {attr = "getfronts.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

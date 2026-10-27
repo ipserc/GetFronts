@@ -1,0 +1,45 @@
+Vas a trabajar como un experto programador de python
+
+Vamos a desarrollar una aplicación que va a descargar las carátulas o fronts de discos o CDs de musica a partir de la lectura de los metadatos de las canciones que encuentre en la carpeta en la que descargará el front.
+El programa tomara una ruta de inicio comp parámetro y a partir de ahí recorrera el árbol de directorios hasta encontrar las carpetas en las que encuentre los ficheros de audio.
+Para cada carpeta de esas ananlizara los metadatos de las pistas de música y de ellas descubrirá el Artista, el nombre del album y la fecha del mimso para cada pista
+Se quedará con los datos que más han aparecido 
+En caso de no haber metadatos podrá identificar esos datos con los valores de la ruta de carpetas hasta llegar a las pistas. En ese caso usará la IA para identificar con esos datos el Artista, el nombre del album y la fecha del mimso
+Si no lo consigue  dara los siguientes valores Artista=unknown, Album=unknown, Fecha=unknown
+Redordará la Ruta
+Si los datos no son unknown, con esa información buscará en internet el front enformato imagen que casan con los valores de Artista, Album y Fecha
+Seleccionará la imagen de mejor calidad, la convertira a png y al tamaño que se usa para presentar en los reproductores de música y la descargará en la Ruta con el nombre Artista_Album_Fecha_Front.png
+
+Dime si tienes una especificación suficiente o necesitas más información
+
+Decisiones importantes
+
+1. Proveedor de IA (para deducir Artista, Álbum y Fecha a partir de la ruta). Propongo la API de Claude con un modelo económico como claude-haiku-5-5, y la clave en la variable de entorno ANTHROPIC_API_KEY. ¿Te vale, o prefieres otro proveedor o un modelo local? probamos claude-haiku-5-5
+2. Dónde buscar las portadas. Propongo:
+   - MusicBrainz con Cover Art Archive: gratis, sin clave, imágenes originales de alta resolución.
+   - La API de búsqueda de iTunes: gratis, hasta 3000×3000.
+   - Deezer, como alternativa.
+   - Discogs o Last.fm solo si tienes clave.
+
+   Descarto hacer scraping de Google Imágenes porque es frágil y va contra sus condiciones de uso. ¿Te parece bien? Ok 
+3. Tamaño final del PNG. Lo habitual en reproductores es 500×500, 600×600 o 1000×1000. ¿Cuál quieres? ¿Cuadrado obligatorio, recortando o rellenando si la imagen no lo es? 500x500
+4. Si la carpeta ya tiene portada (*_Front.png, folder.jpg, cover.jpg o imagen incrustada en las pistas): ¿la salto, la sobrescribo o lo decido con un parámetro? decidir con parámetro, por defecto saltar
+
+Casos límite
+
+5. Formatos de audio: propongo mp3, flac, m4a/aac, ogg, opus, wma, wav y aiff, leídos con la librería mutagen. Ok
+6. Recopilatorios: ¿uso el campo "Artista del álbum" antes que el "Artista" de cada pista? En recopilatorios, ¿pongo Various Artists? Sí
+7. Discos múltiples (subcarpetas CD1/ y CD2/): ¿una portada en cada subcarpeta o una sola en la carpeta del álbum? portada en cada subcarpeta
+8. Fecha: ¿solo el año (1975) o la fecha completa si viene en las etiquetas? solo el año
+9. Datos incompletos: si tengo Artista y Álbum pero la Fecha es unknown, ¿busco igualmente la portada? Propongo que sí, porque la fecha solo sirve para desempatar. Ok
+10. "Recordará la Ruta": ¿quieres un informe final (CSV o JSON) con Ruta, Artista, Álbum, Fecha y resultado de cada carpeta, incluidas las unknown? Sí
+11. Nombre del archivo: quitaré los caracteres no válidos (/ \ : * ? " < > |). ¿Cambio también los espacios por _ o los dejo? También
+
+Extras que propongo (opcionales)
+
+- Un modo --dry-run que muestre lo que haría sin descargar nada. Ok
+- Un registro detallado con --verbose. ok
+- Caché de las búsquedas. ok
+- Respetar el límite de MusicBrainz de 1 petición por segundo. Sí
+- Incrustar la portada en las pistas, solo si lo pides. Ok, con parámetro
+

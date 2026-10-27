@@ -1,0 +1,43 @@
+
+GetFronts v0.1.0 está terminada y funciona de principio a fin. Pasan los 43 tests y la he probado en real con una biblioteca de ejemplo, contra MusicBrainz y Claude: las 5 portadas descargadas eran correctas.
+
+Prueba real
+
+┌──────────────────────────────────────────────────────────┬─────────────┬─────────────────────────────────────────────────┐
+│                         Carpeta                          │  Datos de   │                    Resultado                    │
+├──────────────────────────────────────────────────────────┼─────────────┼─────────────────────────────────────────────────┤
+│ Pink Floyd / The Dark Side of the Moon                   │ etiquetas   │ PNG 500×500 ✔                                   │
+├──────────────────────────────────────────────────────────┼─────────────┼─────────────────────────────────────────────────┤
+│ Mecano / Descanso dominical / CD1 y CD2                  │ etiquetas   │ una portada en cada subcarpeta ✔                │
+├──────────────────────────────────────────────────────────┼─────────────┼─────────────────────────────────────────────────┤
+│ Recopilatorios / Pulp Fiction OST (4 artistas distintos) │ etiquetas   │ detectado como Various Artists ✔                │
+├──────────────────────────────────────────────────────────┼─────────────┼─────────────────────────────────────────────────┤
+│ Sin etiquetas / Radiohead - OK Computer (1997)           │ IA (Claude) │ ✔                                               │
+├──────────────────────────────────────────────────────────┼─────────────┼─────────────────────────────────────────────────┤
+│ Basura / xyz123                                          │ —           │ unknown, sin búsqueda y anotado en el informe ✔ │
+└──────────────────────────────────────────────────────────┴─────────────┴─────────────────────────────────────────────────┘
+
+Al volver a ejecutarlo se saltan las carpetas que ya tienen portada (exists_skipped). --existing overwrite --embed reescribió la portada e la incrustó en las 3 pistas.
+
+Uso
+
+python3 -m getfronts /ruta/musica --dry-run -v    # simular viendo el detalle
+python3 -m getfronts /ruta/musica                 # descargar
+Están todas las opciones que acordamos: --existing skip|overwrite, --embed, --dry-run, --verbose, caché, informe CSV/JSON y límite de 1 petición por segundo a MusicBrainz. Las explico en README.md. El código está en el paquete getfronts/ (lectura de etiquetas, IA, fuentes, elección de imagen, conversión a PNG) y los tests en tests/.
+
+Cambios en tu entorno
+
+- No hay python3-venv, así que instalé anthropic y pytest con pip install --user.
+- Actualicé brotli a 1.2.1 en tu directorio de usuario. La versión 1.0.9 de apt hacía fallar todas las llamadas a Claude con un falso Connection error. Lo apunto en el README por si te vuelve a pasar en otra máquina.
+- No tienes ANTHROPIC_API_KEY definida, pero el SDK encontró credenciales por otra vía y las llamadas a Claude funcionaron.
+
+Decisiones que tomé yo
+
+- Imágenes no cuadradas: no me dijiste si recortar o rellenar. Por defecto relleno con negro (--fit pad, para no perder nada de la imagen). --fit crop recorta al centro. Las imágenes casi cuadradas, como las de 1200×1190, se escalan sin más.
+- La IA se usa también si solo falta el año. Si no está disponible, se aplica una heurística sobre el nombre de la carpeta (Artista - Álbum (Año), Artista/Año - Álbum…).
+- Coincidencia mínima de 0.75 para aceptar una carátula. Se cambia con --min-score.
+- Contacto para MusicBrainz: pide un email o URL en las peticiones. Se configura con la variable GETFRONTS_CONTACT; ahora mismo lleva un valor genérico.
+
+Dejé guardadas en memoria las decisiones acordadas y el estado del proyecto, para retomarlo en la próxima sesión. Cuando quieras, lo pasamos por tu biblioteca real, empezando con --dry-run.
+
+

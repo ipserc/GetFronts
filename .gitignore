@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Generado por tools/stamp_version.py
+getfronts/_build_info.py
+
+# Informes de ejecución
+getfronts_report_*.csv
+getfronts_report_*.json
