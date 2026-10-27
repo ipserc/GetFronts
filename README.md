@@ -63,8 +63,26 @@ Pink Floyd/The Dark Side of the Moon/
 ```bash
 git clone https://github.com/ipserc/GetFronts.git
 cd GetFronts
-pip install --user -r requirements.txt     # o: pip install -e .  (instala el comando getfronts)
+pip install --user -r requirements.txt
+python3 -m getfronts --version
 ```
+
+Para tener además el comando `getfronts` (instalación editable: los cambios en el código se
+aplican sin reinstalar):
+
+```bash
+python3 -m pip install --user -e .
+getfronts --version
+```
+
+> **Ubuntu 22.04**: su pip 22.0.2 falla con *"build backend is missing the 'build_editable'
+> hook"*, porque mezcla el setuptools 59 del sistema en la compilación. Actualiza pip para tu
+> usuario y repite con `python3 -m pip`:
+>
+> ```bash
+> python3 -m pip install --user -U pip
+> python3 -m pip install --user -e .
+> ```
 
 ## Uso
 
@@ -177,9 +195,10 @@ API de Anthropic.
 
 ## Problemas conocidos
 
-Si la IA falla siempre con `Connection error`, revisa la versión de `brotli`: el paquete
-`python3-brotli` 1.0.9 de Ubuntu 22.04 no es compatible con el cliente HTTP del SDK de
-Anthropic. Se arregla con `pip install --user -U brotli`.
+- `pip install -e .` falla en Ubuntu 22.04 con el pip del sistema: ver [Instalación](#instalación).
+- Si la IA falla siempre con `Connection error`, revisa la versión de `brotli`: el paquete
+  `python3-brotli` 1.0.9 de Ubuntu 22.04 no es compatible con el cliente HTTP del SDK de
+  Anthropic. Se arregla con `pip install --user -U brotli`.
 
 ## Licencia
 
