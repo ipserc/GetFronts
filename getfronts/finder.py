@@ -9,7 +9,7 @@ from getfronts import UNKNOWN, VARIOUS_ARTISTS
 from getfronts.http import HttpClient
 from getfronts.imaging import open_image
 from getfronts.sources import Candidate, CoverSource
-from getfronts.textutil import is_various_artists, similarity, strip_brackets, title_similarity
+from getfronts.textutil import is_various_artists, query_title, similarity, strip_brackets, title_similarity
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ SCORE_WINDOW = 0.08     # sólo compiten por calidad las que están a esta dista
 SHORT_RELEASES = {"single", "ep"}
 SHORT_MAX_TRACKS = 4    # una carpeta con más pistas es un álbum: sus sencillos y EP no deben ganarle
 SHORT_PENALTY = 0.9
+YEAR_MISMATCH_PENALTY = 0.85  # título sólo parecido y año a más de 2 de distancia: casi seguro otro disco
 
 
 def score_candidate(c: Candidate, artist: str, album: str, year: str, tracks: int | None = None) -> float:
@@ -25,18 +26,27 @@ def score_candidate(c: Candidate, artist: str, album: str, year: str, tracks: in
 
     Un sencillo o EP con el mismo título que el álbum (Rammstein - *Zeit*) pierde un 10 % si la
     carpeta tiene más de ``SHORT_MAX_TRACKS`` pistas (o no se sabe cuántas).
+
+    Si el título no coincide exactamente y los dos años se conocen y distan más de 2, la
+    puntuación pierde un 15 % y queda por debajo del mínimo: *12'' 80s* (2004) no debe aceptar
+    *NOW 12″ 80s: 1981* (2023). Con el título exacto sólo cuenta el 10 % del año, porque algunas
+    fuentes dan la fecha de una reedición.
     """
     if artist == VARIOUS_ARTISTS:
         artist_sim = 1.0 if is_various_artists(c.artist) else 0.7
     else:
         artist_sim = similarity(artist, c.artist)
     album_sim = title_similarity(album, c.album)
+    year_far = False
     if year == UNKNOWN or not c.year:
         year_sim = 0.5
     else:
         diff = abs(int(year) - int(c.year))
         year_sim = 1.0 if diff == 0 else 0.6 if diff <= 2 else 0.0
+        year_far = diff > 2
     score = 0.45 * artist_sim + 0.45 * album_sim + 0.10 * year_sim
+    if year_far and album_sim < 1.0:
+        score *= YEAR_MISMATCH_PENALTY
     if c.release_type in SHORT_RELEASES and (tracks is None or tracks > SHORT_MAX_TRACKS):
         score *= SHORT_PENALTY
     return round(score, 4)
@@ -58,9 +68,10 @@ class CoverFinder:
         self.target_size = target_size
 
     def find_candidates(self, artist: str, album: str, year: str, tracks: int | None = None) -> list[Candidate]:
-        good = self._search_all(artist, album, year, album, tracks)
-        simple = strip_brackets(album)
-        if not good and simple != album:
+        query = query_title(album)
+        good = self._search_all(artist, album, year, query, tracks)
+        simple = strip_brackets(query)
+        if not good and simple != query:
             # "Album (Deluxe Edition)" puede no encontrarse tal cual: se reintenta sin paréntesis.
             log.debug("Sin resultados; se reintenta como %r", simple)
             good = self._search_all(artist, album, year, simple, tracks)

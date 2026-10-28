@@ -11,6 +11,13 @@ Formato: `mayor.minor.patch`. Cada versión tiene su etiqueta de git y su
   iTunes y Deezer indican el tipo de lanzamiento y, si la carpeta tiene más de 4 pistas, los
   sencillos y EP se puntúan un 10 % menos.
 - iTunes: se quita el sufijo " - Single" / " - EP" del título antes de compararlo.
+- Falsos positivos por la regla del subtítulo: *12'' 80s* (2004) aceptaba *NOW 12″ 80s: 1981*
+  (2023) y *Cat Stevens - The Very Best* (2003) aceptaba *Ray Stevens - The Very Best Of……*
+  (1975). Si el título no coincide exactamente y los años se llevan más de 2, la puntuación
+  pierde un 15 %.
+- Las comillas dobladas o tipográficas (`12''`, `12″`) se escriben como `"` al buscar:
+  MusicBrainz no encontraba *12" 80s Grooves* buscando `12'' 80s Grooves`.
+- Se quitan del título las marcas de formato: `(FLAC)`, `(ogg)`, `[Mp3]`, `(FLAC 24bit-96kHz)`…
 
 ## [0.1.3] - 2026-10-28
 

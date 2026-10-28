@@ -165,3 +165,22 @@ def test_sources_report_release_type():
          "record_type": "single"},
     ]}))
     assert deezer.search("Rammstein", "Zeit", "2022")[0].release_type == "single"
+
+
+def test_distant_year_rejects_similar_title():
+    now = Candidate("a", "u", "Various Artists", "NOW 12″ 80s: 1981", "2023")
+    assert score_candidate(now, "Various Artists", "12'' 80s", "2004") < 0.75
+    # Con el año correcto el subtítulo se sigue aceptando (Tom Petty, v0.1.3).
+    petty = Candidate("a", "u", "Tom Petty & The Heartbreakers",
+                      "The Best of Everything: The Definitive Career Spanning Hits Collection 1976–2016", "2019")
+    assert score_candidate(petty, "Tom Petty and the Heartbreakers", "The Best of Everything", "2019") >= 0.75
+    # Título exacto con la fecha de una reedición: se acepta.
+    reissue = Candidate("a", "u", "Pink Floyd", "The Wall", "2011")
+    assert score_candidate(reissue, "Pink Floyd", "The Wall", "1979") == 0.9
+
+
+def test_query_title_normalizes_quotes():
+    from getfronts.textutil import query_title
+    assert query_title("12'' 80s Grooves") == '12" 80s Grooves'
+    assert query_title("80s 12″ Summer") == '80s 12" Summer'
+    assert query_title("Don’t Stop") == "Don't Stop"

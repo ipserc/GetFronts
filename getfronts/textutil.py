@@ -24,6 +24,13 @@ _DISC_MARK_RE = re.compile(
     re.IGNORECASE,
 )
 _BRACKETS_RE = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]")
+_QUOTES_TABLE = str.maketrans({"″": '"', "“": '"', "”": '"', "„": '"', "’": "'", "‘": "'", "´": "'", "`": "'"})
+# Marcas de formato del archivo: "(FLAC)", "[mp3 320]", "(Flac 24bit-96kHz)", "{OGG}"...
+_AUDIO_FORMATS = {"flac", "ogg", "vorbis", "mp3", "m4a", "aac", "alac", "opus", "wma", "wav",
+                  "aif", "aiff", "ape", "wv", "dsd"}
+_FORMAT_EXTRAS_RE = re.compile(r"\d+(?:[.,]\d+)?(?:bits?|khz|kbps|k)?|bits?|khz|kbps|hi|res|lossless|cbr|vbr|v[02]",
+                               re.IGNORECASE)
+_BRACKET_GROUP_RE = re.compile(r"\s*[\(\[\{]([^\(\)\[\]\{\}]*)[\)\]\}]")
 _SUBTITLE_SEP_RE = re.compile(r"\s*:\s+|\s+[-–—]\s+")
 SUBTITLE_PENALTY = 0.9  # una coincidencia sólo del título principal vale algo menos que una exacta
 _VA_NAMES = {"various artists", "various", "va", "v a", "varios artistas", "varios", "artistes divers"}
@@ -58,10 +65,27 @@ def similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, na, nb).ratio()
 
 
+def _is_format_mark(content: str) -> bool:
+    """``True`` si lo que hay entre paréntesis sólo describe el formato: "FLAC", "MP3 320"..."""
+    tokens = [t for t in re.split(r"[\s,/+_\-]+", content.casefold()) if t]
+    return (any(t in _AUDIO_FORMATS for t in tokens)
+            and all(t in _AUDIO_FORMATS or _FORMAT_EXTRAS_RE.fullmatch(t) for t in tokens))
+
+
 def clean_album_title(album: str) -> str:
-    """Quita las marcas de disco: "Liebe ist für alle da (CD 2)" -> "Liebe ist für alle da"."""
-    cleaned = _DISC_MARK_RE.sub("", album).strip(" -–:,")
+    """Quita las marcas de disco y de formato: "Liebe ist für alle da (CD 2) (FLAC)" -> "Liebe ist für alle da"."""
+    cleaned = _BRACKET_GROUP_RE.sub(lambda m: "" if _is_format_mark(m.group(1)) else m.group(0), album)
+    cleaned = _DISC_MARK_RE.sub("", cleaned.strip()).strip(" -–:,")
     return cleaned or album
+
+
+def query_title(value: str) -> str:
+    """Comillas tipográficas o dobladas a su forma simple para las búsquedas.
+
+    MusicBrainz no encuentra ``12'' 80s Grooves`` pero sí ``12" 80s Grooves``.
+    """
+    value = value.replace("''", '"')
+    return value.translate(_QUOTES_TABLE)
 
 
 def strip_brackets(value: str) -> str:

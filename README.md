@@ -33,6 +33,8 @@ Pink Floyd/The Dark Side of the Moon/
    Lo que no se averigua queda como `unknown`.
    Al final se quitan del título las marcas de disco: `(CD 2)`, `[Disc 1 of 2]`, `- CD2`…
 4. **Búsqueda**: con Artista y Álbum conocidos (el año sólo desempata) consulta las fuentes.
+   Antes de buscar se quitan del título las marcas de disco ("CD 2") y de formato ("(FLAC)",
+   "[mp3]"), y las comillas `''` o `″` se escriben como `"`.
    Si no encuentra nada, repite la búsqueda sin lo que haya entre paréntesis o corchetes
    (`(Deluxe Edition)`, `[Remastered]`…):
 
@@ -51,6 +53,9 @@ Pink Floyd/The Dark Side of the Moon/
    coincidencia exacta.
    Si la carpeta tiene más de 4 pistas, los sencillos y EP también pierden un 10 %: así no
    ganan al álbum cuando se llaman igual (Rammstein - *Zeit*), aunque se aceptan si no hay otra cosa.
+   Si el título no coincide exactamente y los años se llevan más de 2, la candidata pierde un 15 %
+   y queda descartada: casi seguro que es otro disco. Con el título exacto se acepta aunque el año
+   no cuadre, porque algunas fuentes dan la fecha de una reedición.
    Descarta los que no llegan al mínimo, descarga las mejores candidatas y se queda con la de
    más calidad: la que alcanza el tamaño final, es cuadrada y tiene más resolución.
 6. **Conversión**: la pasa a PNG de 500x500, rellenando con negro (o recortando) si no es
