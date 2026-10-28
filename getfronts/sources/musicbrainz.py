@@ -54,6 +54,7 @@ class MusicBrainzSource(CoverSource):
                     year=extract_year(group.get("first-release-date")),
                     width=size,
                     height=size,
+                    release_type=(group.get("primary-type") or "").lower() or None,
                 )
             )
         return candidates

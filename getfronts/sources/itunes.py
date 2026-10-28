@@ -10,6 +10,8 @@ from getfronts.textutil import extract_year
 
 SEARCH_URL = "https://itunes.apple.com/search"
 ARTWORK_SIZE = 1200
+# iTunes marca los sencillos y EP en el propio título: "Zeit - Single".
+TYPE_SUFFIX = re.compile(r"\s+-\s+(Single|EP)$", re.IGNORECASE)
 
 
 class ITunesSource(CoverSource):
@@ -27,15 +29,18 @@ class ITunesSource(CoverSource):
                 continue
             # La URL admite cualquier tamaño: .../100x100bb.jpg -> .../1200x1200bb.jpg
             url = re.sub(r"/\d+x\d+bb\.", f"/{ARTWORK_SIZE}x{ARTWORK_SIZE}bb.", art)
+            title = item.get("collectionName", "")
+            suffix = TYPE_SUFFIX.search(title)
             candidates.append(
                 Candidate(
                     source=self.name,
                     url=url,
                     artist=item.get("artistName", ""),
-                    album=item.get("collectionName", ""),
+                    album=TYPE_SUFFIX.sub("", title),
                     year=extract_year(item.get("releaseDate")),
                     width=ARTWORK_SIZE,
                     height=ARTWORK_SIZE,
+                    release_type=suffix.group(1).lower() if suffix else "album",
                 )
             )
         return candidates

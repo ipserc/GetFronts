@@ -49,6 +49,8 @@ Pink Floyd/The Dark Side of the Moon/
    Si una fuente devuelve el título con subtítulo ("The Best of Everything: The Definitive…"),
    también se compara el título principal, con un 10 % de penalización frente a una
    coincidencia exacta.
+   Si la carpeta tiene más de 4 pistas, los sencillos y EP también pierden un 10 %: así no
+   ganan al álbum cuando se llaman igual (Rammstein - *Zeit*), aunque se aceptan si no hay otra cosa.
    Descarta los que no llegan al mínimo, descarga las mejores candidatas y se queda con la de
    más calidad: la que alcanza el tamaño final, es cuadrada y tiene más resolución.
 6. **Conversión**: la pasa a PNG de 500x500, rellenando con negro (o recortando) si no es

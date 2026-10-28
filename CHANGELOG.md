@@ -3,6 +3,15 @@
 Formato: `mayor.minor.patch`. Cada versión tiene su etiqueta de git y su
 [Release en GitHub](https://github.com/ipserc/GetFronts/releases).
 
+## [0.1.4] - 2026-10-28
+
+### Corregido
+- Sencillo en lugar de álbum: en *Zeit* de Rammstein el sencillo y el álbum tienen el mismo
+  título y año, empataban a 1.0 y se descargaba la portada del sencillo. Ahora MusicBrainz,
+  iTunes y Deezer indican el tipo de lanzamiento y, si la carpeta tiene más de 4 pistas, los
+  sencillos y EP se puntúan un 10 % menos.
+- iTunes: se quita el sufijo " - Single" / " - EP" del título antes de compararlo.
+
 ## [0.1.3] - 2026-10-28
 
 ### Corregido

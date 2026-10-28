@@ -134,7 +134,7 @@ class FolderProcessor:
             result.message = f"ya tiene portada: {existing}"
             return
 
-        candidates = self.finder.find_candidates(info.artist, info.album, info.year)
+        candidates = self.finder.find_candidates(info.artist, info.album, info.year, len(tracks))
         chosen = self.finder.choose(candidates, download=not self.opt.dry_run)
         if not chosen:
             result.status = NOT_FOUND

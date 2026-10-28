@@ -15,10 +15,17 @@ log = logging.getLogger(__name__)
 
 DOWNLOAD_TOP = 3        # candidatas que se descargan para comparar su resolución real
 SCORE_WINDOW = 0.08     # sólo compiten por calidad las que están a esta distancia de la mejor puntuación
+SHORT_RELEASES = {"single", "ep"}
+SHORT_MAX_TRACKS = 4    # una carpeta con más pistas es un álbum: sus sencillos y EP no deben ganarle
+SHORT_PENALTY = 0.9
 
 
-def score_candidate(c: Candidate, artist: str, album: str, year: str) -> float:
-    """Coincidencia 0..1: 45 % artista, 45 % álbum, 10 % año."""
+def score_candidate(c: Candidate, artist: str, album: str, year: str, tracks: int | None = None) -> float:
+    """Coincidencia 0..1: 45 % artista, 45 % álbum, 10 % año.
+
+    Un sencillo o EP con el mismo título que el álbum (Rammstein - *Zeit*) pierde un 10 % si la
+    carpeta tiene más de ``SHORT_MAX_TRACKS`` pistas (o no se sabe cuántas).
+    """
     if artist == VARIOUS_ARTISTS:
         artist_sim = 1.0 if is_various_artists(c.artist) else 0.7
     else:
@@ -29,7 +36,10 @@ def score_candidate(c: Candidate, artist: str, album: str, year: str) -> float:
     else:
         diff = abs(int(year) - int(c.year))
         year_sim = 1.0 if diff == 0 else 0.6 if diff <= 2 else 0.0
-    return round(0.45 * artist_sim + 0.45 * album_sim + 0.10 * year_sim, 4)
+    score = 0.45 * artist_sim + 0.45 * album_sim + 0.10 * year_sim
+    if c.release_type in SHORT_RELEASES and (tracks is None or tracks > SHORT_MAX_TRACKS):
+        score *= SHORT_PENALTY
+    return round(score, 4)
 
 
 @dataclass
@@ -47,16 +57,17 @@ class CoverFinder:
         self.min_score = min_score
         self.target_size = target_size
 
-    def find_candidates(self, artist: str, album: str, year: str) -> list[Candidate]:
-        good = self._search_all(artist, album, year, query_album=album)
+    def find_candidates(self, artist: str, album: str, year: str, tracks: int | None = None) -> list[Candidate]:
+        good = self._search_all(artist, album, year, album, tracks)
         simple = strip_brackets(album)
         if not good and simple != album:
             # "Album (Deluxe Edition)" puede no encontrarse tal cual: se reintenta sin paréntesis.
             log.debug("Sin resultados; se reintenta como %r", simple)
-            good = self._search_all(artist, album, year, query_album=simple)
+            good = self._search_all(artist, album, year, simple, tracks)
         return good
 
-    def _search_all(self, artist: str, album: str, year: str, query_album: str) -> list[Candidate]:
+    def _search_all(self, artist: str, album: str, year: str, query_album: str,
+                    tracks: int | None) -> list[Candidate]:
         """Consulta todas las fuentes con ``query_album`` y puntúa contra el título real ``album``."""
         found: list[Candidate] = []
         for source in self.sources:
@@ -66,8 +77,9 @@ class CoverFinder:
                 log.warning("Fuente %s falló para %s - %s: %s", source.name, artist, album, exc)
                 continue
             for c in results:
-                c.score = score_candidate(c, artist, album, year)
-                log.debug("  %-11s %.3f  %s - %s (%s)", c.source, c.score, c.artist, c.album, c.year)
+                c.score = score_candidate(c, artist, album, year, tracks)
+                log.debug("  %-11s %.3f  %s - %s (%s) [%s]", c.source, c.score, c.artist, c.album,
+                          c.year, c.release_type or "?")
             found.extend(results)
         good = [c for c in found if c.score >= self.min_score]
         good.sort(key=lambda c: (c.score, c.width or 0), reverse=True)

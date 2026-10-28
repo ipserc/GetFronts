@@ -119,3 +119,49 @@ def test_subtitled_title_is_accepted_but_exact_title_wins():
     exact = Candidate("a", "http://v1", "Queen", "Greatest Hits", "1981")
     vol2 = Candidate("a", "http://v2", "Queen", "Greatest Hits: Volume II", "1981")
     assert score_candidate(exact, "Queen", "Greatest Hits", "1981") > score_candidate(vol2, "Queen", "Greatest Hits", "1981")
+
+
+def test_single_with_same_title_loses_to_album():
+    # Rammstein - Zeit (2022): el sencillo y el álbum se llaman igual y salen el mismo año.
+    single = Candidate("a", "http://single", "Rammstein", "Zeit", "2022", release_type="single")
+    album = Candidate("a", "http://album", "Rammstein", "Zeit", "2022", release_type="album")
+    assert score_candidate(single, "Rammstein", "Zeit", "2022", tracks=11) == 0.9
+    assert score_candidate(album, "Rammstein", "Zeit", "2022", tracks=11) == 1.0
+    # Una carpeta corta puede ser el propio sencillo: no se penaliza.
+    assert score_candidate(single, "Rammstein", "Zeit", "2022", tracks=3) == 1.0
+
+    http = FakeHttp({"http://single": png_bytes(1200, 1200), "http://album": png_bytes(1200, 1200)})
+    finder = CoverFinder([StaticSource("a", [single, album])], http, 0.75, 500)
+    candidates = finder.find_candidates("Rammstein", "Zeit", "2022", tracks=11)
+    assert finder.choose(candidates).candidate.url == "http://album"
+    # Si sólo existe el sencillo, se sigue aceptando.
+    finder = CoverFinder([StaticSource("a", [single])], http, 0.75, 500)
+    assert finder.choose(finder.find_candidates("Rammstein", "Zeit", "2022", tracks=11)).candidate.url == "http://single"
+
+
+class JsonHttp:
+    def __init__(self, data):
+        self.data = data
+
+    def get_json(self, url, params=None, **kwargs):
+        return self.data
+
+
+def test_sources_report_release_type():
+    from getfronts.sources.deezer import DeezerSource
+    from getfronts.sources.itunes import ITunesSource
+
+    itunes = ITunesSource(JsonHttp({"results": [
+        {"artworkUrl100": "http://i/100x100bb.jpg", "artistName": "Rammstein",
+         "collectionName": "Zeit - Single", "releaseDate": "2022-03-10T08:00:00Z"},
+        {"artworkUrl100": "http://i/100x100bb.jpg", "artistName": "Rammstein",
+         "collectionName": "Zeit", "releaseDate": "2022-04-29T07:00:00Z"},
+    ]}))
+    found = itunes.search("Rammstein", "Zeit", "2022")
+    assert [(c.album, c.release_type) for c in found] == [("Zeit", "single"), ("Zeit", "album")]
+
+    deezer = DeezerSource(JsonHttp({"data": [
+        {"cover_xl": "http://d/xl.jpg", "artist": {"name": "Rammstein"}, "title": "Zeit",
+         "record_type": "single"},
+    ]}))
+    assert deezer.search("Rammstein", "Zeit", "2022")[0].release_type == "single"

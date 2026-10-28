@@ -35,6 +35,7 @@ class DeezerSource(CoverSource):
                     year=None,  # la búsqueda de Deezer no devuelve la fecha
                     width=size,
                     height=size,
+                    release_type=item.get("record_type") or None,
                 )
             )
         return candidates
