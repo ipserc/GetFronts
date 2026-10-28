@@ -29,9 +29,12 @@ Pink Floyd/The Dark Side of the Moon/
 3. **Identificación por IA**: si faltan datos, pregunta a Claude (`claude-haiku-5-5`) enviándole
    el final de la ruta, los nombres de las pistas y lo que ya se sepa. Si la IA no está
    disponible o no lo consigue, aplica una heurística sobre el nombre de las carpetas
-   (`Artista - Álbum (Año)`, `Artista/Año - Álbum`, `Artista - Año - Álbum`…).
+   (`Artista - Álbum (Año)`, `Artista/Año - Álbum`, `Artista/Año-Álbum`, `Artista - Año - Álbum`…).
    Lo que no se averigua queda como `unknown`.
-4. **Búsqueda**: con Artista y Álbum conocidos (el año sólo desempata) consulta las fuentes:
+   Al final se quitan del título las marcas de disco: `(CD 2)`, `[Disc 1 of 2]`, `- CD2`…
+4. **Búsqueda**: con Artista y Álbum conocidos (el año sólo desempata) consulta las fuentes.
+   Si no encuentra nada, repite la búsqueda sin lo que haya entre paréntesis o corchetes
+   (`(Deluxe Edition)`, `[Remastered]`…):
 
    | Fuente | Clave | Notas |
    |---|---|---|
@@ -43,6 +46,9 @@ Pink Floyd/The Dark Side of the Moon/
 
 5. **Elección**: puntúa cada resultado según su parecido con el Artista (45 %), el Álbum (45 %)
    y el Año (10 %), sin tener en cuenta mayúsculas, acentos ni sufijos como "(Remastered)".
+   Si una fuente devuelve el título con subtítulo ("The Best of Everything: The Definitive…"),
+   también se compara el título principal, con un 10 % de penalización frente a una
+   coincidencia exacta.
    Descarta los que no llegan al mínimo, descarga las mejores candidatas y se queda con la de
    más calidad: la que alcanza el tamaño final, es cuadrada y tiene más resolución.
 6. **Conversión**: la pasa a PNG de 500x500, rellenando con negro (o recortando) si no es
@@ -160,7 +166,8 @@ código. Para fijar ambos valores en una copia que se vaya a distribuir:
 python3 tools/stamp_version.py     # genera getfronts/_build_info.py (no se versiona)
 ```
 
-Cada versión publicada lleva su etiqueta de git (`v0.1.0`, `v0.2.0`…).
+Cada versión publicada lleva su etiqueta de git y su Release en GitHub. Los cambios de cada
+versión están en [CHANGELOG.md](CHANGELOG.md).
 
 ## Estructura del proyecto
 
@@ -181,6 +188,8 @@ getfronts/
 └── version.py      # versión completa (versión - fecha - commit)
 tools/stamp_version.py
 tests/
+CHANGELOG.md                # cambios de cada versión
+CLAUDE.md                   # guía de trabajo para Claude Code
 Descripción_y_alcance.txt   # especificación original del proyecto
 ```
 
