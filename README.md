@@ -3,9 +3,9 @@
 Descarga automáticamente las carátulas (*fronts*) de los discos de una biblioteca musical,
 a partir de los metadatos de las propias canciones.
 
-Se le dan una o varias carpetas de inicio (admite comodines) y recorre todo su árbol. En cada carpeta con pistas de audio
-averigua el **Artista**, el **Álbum** y el **Año**, busca la carátula en internet, elige la de
-mejor calidad y la guarda junto a las pistas como PNG de 500x500:
+Se le dan una o varias carpetas de inicio (admite comodines) y recorre todo su árbol. En cada
+carpeta con pistas de audio averigua el **Artista**, el **Álbum** y el **Año**, busca la carátula
+en internet, elige la de mejor calidad y la guarda junto a las pistas como PNG de 500x500:
 
 ```
 Pink Floyd/The Dark Side of the Moon/
@@ -31,10 +31,10 @@ Pink Floyd/The Dark Side of the Moon/
    disponible o no lo consigue, aplica una heurística sobre el nombre de las carpetas
    (`Artista - Álbum (Año)`, `Artista/Año - Álbum`, `Artista/Año-Álbum`, `Artista - Año - Álbum`…).
    Lo que no se averigua queda como `unknown`.
-   Al final se quitan del título las marcas de disco: `(CD 2)`, `[Disc 1 of 2]`, `- CD2`…
-4. **Búsqueda**: con Artista y Álbum conocidos (el año sólo desempata) consulta las fuentes.
-   Antes de buscar se quitan del título las marcas de disco ("CD 2") y de formato ("(FLAC)",
-   "[mp3]"), y las comillas `''` o `″` se escriben como `"`.
+   Al final se quitan del título las marcas de disco (`(CD 2)`, `[Disc 1 of 2]`, `- CD2`…) y de
+   formato (`(FLAC)`, `(ogg)`, `[Mp3]`, `(FLAC 24bit-96kHz)`…).
+4. **Búsqueda**: con Artista y Álbum conocidos consulta las fuentes; si falta el año se busca
+   igualmente. En la consulta, las comillas `''` o `″` se escriben como `"` (`12'' 80s` → `12" 80s`).
    Si no encuentra nada, repite la búsqueda sin lo que haya entre paréntesis o corchetes
    (`(Deluxe Edition)`, `[Remastered]`…):
 
@@ -113,7 +113,7 @@ Los comodines `*`, `?` y `[...]` funcionan con comillas (los expande GetFronts) 
 | Opción | Efecto |
 |---|---|
 | `-n`, `--dry-run` | Busca y muestra qué haría, sin descargar imágenes ni escribir portadas |
-| `-v`, `--verbose` | Registro detallado (candidatas y puntuaciones de cada fuente) |
+| `-v`, `--verbose` | Registro detallado (candidatas de cada fuente con su puntuación y su tipo: `[album]`, `[single]`, `[ep]`…) |
 | `--existing skip\|overwrite` | Qué hacer si la carpeta ya tiene portada (`*_Front.png`, `folder.*`, `cover.*`, `front.*` o imagen incrustada en las pistas). Por defecto `skip` |
 | `--embed` | Incrusta también la portada en las pistas (todos los formatos salvo wma) |
 | `--size N` | Lado del PNG final en píxeles (por defecto 500) |
@@ -140,7 +140,7 @@ Los comodines `*`, `?` y `[...]` funcionan con comillas (los expande GetFronts) 
 ### Ejemplo de salida
 
 ```
-GetFronts 0.1.0 - 2026_1028 - 96f720e
+GetFronts 0.1.5 - 2026_1028 - 268df87
 [downloaded] /musica/Mecano/Descanso dominical/CD1
     Mecano | Descanso Dominical | 1988  (datos: tags)
     musicbrainz 1200x1200 score=1.00 -> Mecano_Descanso_Dominical_1988_Front.png
@@ -164,10 +164,10 @@ Estados: `downloaded`, `dry_run`, `exists_skipped`, `unknown_skipped`, `not_foun
 
 ## Versión
 
-Cada ejecución muestra la versión al empezar (también `--version` y `--help`):
+Cada ejecución muestra la versión al empezar (también `--version`, `--help`, `--about`…):
 
 ```
-GetFronts 0.1.0 - 2026_1028 - 96f720e
+GetFronts 0.1.5 - 2026_1028 - 268df87
           │       │           └ commit (0000000 si no hay repositorio git o commits)
           │       └ fecha de compilación, YYYY_MMDD
           └ mayor.minor.patch  (getfronts/__init__.py)
@@ -187,12 +187,14 @@ versión están en [CHANGELOG.md](CHANGELOG.md).
 
 ```
 getfronts/
-├── cli.py          # línea de comandos y bucle principal
+├── cli.py          # línea de comandos (ayuda en inglés y español) y bucle principal
+├── about.py        # autoría: --about / --acerca-de
 ├── scanner.py      # recorrido del árbol de carpetas
 ├── metadata.py     # lectura de etiquetas y votación por mayoría
 ├── ai.py           # identificación con Claude y heurística por la ruta
 ├── sources/        # MusicBrainz, iTunes, Deezer, Discogs, Last.fm
 ├── finder.py       # puntuación de candidatas y elección de la mejor imagen
+├── textutil.py     # limpieza y comparación de títulos, nombres de archivo
 ├── imaging.py      # conversión a PNG cuadrado
 ├── embed.py        # incrustación de la portada en las pistas
 ├── processor.py    # flujo completo para una carpeta
@@ -222,6 +224,9 @@ API de Anthropic.
 - Si la IA falla siempre con `Connection error`, revisa la versión de `brotli`: el paquete
   `python3-brotli` 1.0.9 de Ubuntu 22.04 no es compatible con el cliente HTTP del SDK de
   Anthropic. Se arregla con `pip install --user -U brotli`.
+- Muchos recopilatorios (por ejemplo la serie *12" 80s*) no están en MusicBrainz, iTunes ni
+  Deezer, o están sin imagen, y salen como `not_found`. Discogs suele tenerlos: crea un token
+  gratuito en discogs.com (*Settings → Developers*) y expórtalo en `DISCOGS_TOKEN`.
 
 ## Autoría
 
