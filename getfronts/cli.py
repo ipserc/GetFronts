@@ -10,6 +10,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from getfronts.about import about_text
 from getfronts.ai import DEFAULT_MODEL, AlbumGuesser
 from getfronts.cache import JsonCache, default_cache_dir
 from getfronts.finder import CoverFinder
@@ -23,36 +24,131 @@ from getfronts.version import full_version
 log = logging.getLogger("getfronts")
 
 
-def build_parser() -> argparse.ArgumentParser:
+# Textos de la ayuda: ``--help`` en inglés, ``--ayuda`` en español.
+HELP_TEXTS = {
+    "en": {
+        "usage": "usage: ",
+        "positionals": "positional arguments",
+        "options": "options",
+        "description": "Downloads album covers based on the tracks' metadata.",
+        "folder": "folder",
+        "roots": "starting folders; their whole tree is scanned. Wildcards are accepted: "
+                 "'/internal1/Flac/Alaska*' processes every folder starting with Alaska",
+        "help": "show this help message in English and exit",
+        "ayuda": "show this help message in Spanish and exit",
+        "dry_run": "show what would be done without downloading images or writing cover files",
+        "verbose": "detailed logging",
+        "existing": "what to do if the folder already has a cover (default: skip)",
+        "embed": "also embed the cover in the tracks",
+        "size": "side of the final PNG in pixels (default: 500)",
+        "fit": "non-square images: pad = fill, crop = trim (default: pad)",
+        "report": "report .csv or .json (default: getfronts_report_<date>.csv in the current directory)",
+        "sources": "sources in order, comma separated (available: {sources})",
+        "min_score": "minimum match 0..1 to accept a cover (default: 0.75)",
+        "no_ai": "do not use AI to identify albums from the path",
+        "model": "Claude model (default: {model})",
+        "no_cache": "do not read or write the search cache",
+        "cache_dir": "cache folder",
+        "cache_days": "cache validity in days (default: 30)",
+        "version": "show the program version and exit",
+        "about": "show authorship, motivation and acknowledgments in English and exit",
+        "acerca_de": "show authorship, motivation and acknowledgments in Spanish and exit",
+    },
+    "es": {
+        "usage": "uso: ",
+        "positionals": "argumentos posicionales",
+        "options": "opciones",
+        "description": "Descarga las carátulas de los álbumes a partir de los metadatos de las pistas.",
+        "folder": "carpeta",
+        "roots": "carpetas de inicio; se recorre todo su árbol. Admite comodines: "
+                 "'/internal1/Flac/Alaska*' procesa todas las que empiezan por Alaska",
+        "help": "muestra esta ayuda en inglés y sale",
+        "ayuda": "muestra esta ayuda en español y sale",
+        "dry_run": "muestra lo que haría sin descargar imágenes ni escribir ficheros de portada",
+        "verbose": "registro detallado",
+        "existing": "qué hacer si la carpeta ya tiene portada (por defecto: skip)",
+        "embed": "incrusta también la portada en las pistas",
+        "size": "lado del PNG final en píxeles (por defecto: 500)",
+        "fit": "imágenes no cuadradas: pad = rellenar, crop = recortar (por defecto: pad)",
+        "report": "informe .csv o .json (por defecto: getfronts_report_<fecha>.csv en el directorio actual)",
+        "sources": "fuentes en orden, separadas por comas (disponibles: {sources})",
+        "min_score": "coincidencia mínima 0..1 para aceptar una carátula (por defecto: 0.75)",
+        "no_ai": "no usar la IA para identificar álbumes por la ruta",
+        "model": "modelo de Claude (por defecto: {model})",
+        "no_cache": "no leer ni guardar la caché de búsquedas",
+        "cache_dir": "carpeta de la caché",
+        "cache_days": "días de validez de la caché (por defecto: 30)",
+        "version": "muestra la versión del programa y sale",
+        "about": "muestra la autoría, la motivación y los agradecimientos en inglés y sale",
+        "acerca_de": "muestra la autoría, la motivación y los agradecimientos en español y sale",
+    },
+}
+
+
+class _HelpAction(argparse.Action):
+    """``--help`` / ``--ayuda``: imprime la ayuda en el idioma de la opción."""
+
+    def __init__(self, option_strings, dest, lang: str, **kwargs):
+        super().__init__(option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs)
+        self.lang = lang
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        build_parser(self.lang).print_help()
+        parser.exit()
+
+
+class _AboutAction(argparse.Action):
+    """``--about`` / ``--acerca-de``: imprime la autoría en el idioma de la opción."""
+
+    def __init__(self, option_strings, dest, lang: str, **kwargs):
+        super().__init__(option_strings, dest, nargs=0, default=argparse.SUPPRESS, **kwargs)
+        self.lang = lang
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print(about_text(self.lang))
+        parser.exit()
+
+
+class _Formatter(argparse.HelpFormatter):
+    usage_prefix = "usage: "
+
+    def add_usage(self, usage, actions, groups, prefix=None):
+        super().add_usage(usage, actions, groups, prefix or self.usage_prefix)
+
+
+def build_parser(lang: str = "en") -> argparse.ArgumentParser:
+    t = HELP_TEXTS[lang]
+    formatter = type("Formatter", (_Formatter,), {"usage_prefix": t["usage"]})
     p = argparse.ArgumentParser(
         prog="getfronts",
-        description="Descarga las carátulas de los álbumes a partir de los metadatos de las pistas.",
+        description=t["description"],
         epilog=f"GetFronts {full_version()}",
+        formatter_class=formatter,
+        add_help=False,
     )
-    p.add_argument("roots", nargs="+", metavar="carpeta",
-                   help="carpetas de inicio; se recorre todo su árbol. Admite comodines: "
-                        "'/internal1/Flac/Alaska*' procesa todas las que empiezan por Alaska")
-    p.add_argument("-n", "--dry-run", action="store_true",
-                   help="muestra lo que haría sin descargar imágenes ni escribir ficheros de portada")
-    p.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
-    p.add_argument("--existing", choices=("skip", "overwrite"), default="skip",
-                   help="qué hacer si la carpeta ya tiene portada (por defecto: skip)")
-    p.add_argument("--embed", action="store_true", help="incrusta también la portada en las pistas")
-    p.add_argument("--size", type=int, default=500, help="lado del PNG final en píxeles (por defecto: 500)")
-    p.add_argument("--fit", choices=("pad", "crop"), default="pad",
-                   help="imágenes no cuadradas: pad = rellenar, crop = recortar (por defecto: pad)")
-    p.add_argument("--report", type=Path,
-                   help="informe .csv o .json (por defecto: getfronts_report_<fecha>.csv en el directorio actual)")
+    p._positionals.title = t["positionals"]
+    p._optionals.title = t["options"]
+    p.add_argument("roots", nargs="+", metavar=t["folder"], help=t["roots"])
+    p.add_argument("-h", "--help", action=_HelpAction, lang="en", help=t["help"])
+    p.add_argument("--ayuda", action=_HelpAction, lang="es", help=t["ayuda"])
+    p.add_argument("-n", "--dry-run", action="store_true", help=t["dry_run"])
+    p.add_argument("-v", "--verbose", action="store_true", help=t["verbose"])
+    p.add_argument("--existing", choices=("skip", "overwrite"), default="skip", help=t["existing"])
+    p.add_argument("--embed", action="store_true", help=t["embed"])
+    p.add_argument("--size", type=int, default=500, help=t["size"])
+    p.add_argument("--fit", choices=("pad", "crop"), default="pad", help=t["fit"])
+    p.add_argument("--report", type=Path, help=t["report"])
     p.add_argument("--sources", default=",".join(DEFAULT_SOURCES),
-                   help=f"fuentes en orden, separadas por comas (disponibles: {','.join(ALL_SOURCES)})")
-    p.add_argument("--min-score", type=float, default=0.75,
-                   help="coincidencia mínima 0..1 para aceptar una carátula (por defecto: 0.75)")
-    p.add_argument("--no-ai", action="store_true", help="no usar la IA para identificar álbumes por la ruta")
-    p.add_argument("--model", default=DEFAULT_MODEL, help=f"modelo de Claude (por defecto: {DEFAULT_MODEL})")
-    p.add_argument("--no-cache", action="store_true", help="no leer ni guardar la caché de búsquedas")
-    p.add_argument("--cache-dir", type=Path, default=default_cache_dir(), help="carpeta de la caché")
-    p.add_argument("--cache-days", type=float, default=30, help="días de validez de la caché (por defecto: 30)")
-    p.add_argument("--version", action="version", version=f"GetFronts {full_version()}")
+                   help=t["sources"].format(sources=",".join(ALL_SOURCES)))
+    p.add_argument("--min-score", type=float, default=0.75, help=t["min_score"])
+    p.add_argument("--no-ai", action="store_true", help=t["no_ai"])
+    p.add_argument("--model", default=DEFAULT_MODEL, help=t["model"].format(model=DEFAULT_MODEL))
+    p.add_argument("--no-cache", action="store_true", help=t["no_cache"])
+    p.add_argument("--cache-dir", type=Path, default=default_cache_dir(), help=t["cache_dir"])
+    p.add_argument("--cache-days", type=float, default=30, help=t["cache_days"])
+    p.add_argument("--version", action="version", version=f"GetFronts {full_version()}", help=t["version"])
+    p.add_argument("--about", action=_AboutAction, lang="en", help=t["about"])
+    p.add_argument("--acerca-de", action=_AboutAction, lang="es", help=t["acerca_de"])
     return p
 
 

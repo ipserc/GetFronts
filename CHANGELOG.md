@@ -3,6 +3,13 @@
 Formato: `mayor.minor.patch`. Cada versión tiene su etiqueta de git y su
 [Release en GitHub](https://github.com/ipserc/GetFronts/releases).
 
+## [0.1.5] - 2026-10-28
+
+### Añadido
+- `--about` (inglés) y `--acerca-de` (español): autoría, motivación y agradecimientos.
+- La ayuda (`-h`, `--help`) está en inglés; `--ayuda` la muestra en español.
+- Sección «Autoría» en el README.
+
 ## [0.1.4] - 2026-10-28
 
 ### Añadido

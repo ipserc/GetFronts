@@ -125,6 +125,8 @@ Los comodines `*`, `?` y `[...]` funcionan con comillas (los expande GetFronts) 
 | `--model M` | Modelo de Claude (por defecto `claude-haiku-5-5`) |
 | `--no-cache`, `--cache-dir`, `--cache-days` | Caché de búsquedas y respuestas de la IA (`~/.cache/getfronts`, 30 días) |
 | `--version` | Muestra la versión |
+| `-h`, `--help` / `--ayuda` | Ayuda en inglés / en español |
+| `--about` / `--acerca-de` | Autoría, motivación y agradecimientos en inglés / en español |
 
 ### Variables de entorno
 
@@ -220,6 +222,16 @@ API de Anthropic.
 - Si la IA falla siempre con `Connection error`, revisa la versión de `brotli`: el paquete
   `python3-brotli` 1.0.9 de Ubuntu 22.04 no es compatible con el cliente HTTP del SDK de
   Anthropic. Se arregla con `pip install --user -U brotli`.
+
+## Autoría
+
+- **Autores**: Ipserc & Claude
+- **Email**: ipserc at selenitas dot es
+- **Fecha de concepción**: 2026.10.27
+- **Motivación**: me encanta ver las carátulas de los álbumes en mi reproductor musical.
+
+**Agradecimientos**: gracias a Linux, gracias a la FSF, gracias a Python.
+Gracias a quienes contribuyen desinteresadamente al mundo del software. Gracias.
 
 ## Licencia
 

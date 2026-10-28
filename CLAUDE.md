@@ -16,6 +16,8 @@ No hay venv (falta `python3-venv`): las dependencias se instalan con `pip instal
 ## Reglas
 
 - Todo en español: mensajes al usuario, logs, docstrings, commits y notas de Release.
+  Excepciones pedidas por el usuario: `--help` y `--about` en inglés (`--ayuda` y `--acerca-de`
+  en español; textos en `HELP_TEXTS` de `cli.py` y en `about.py`).
 - La versión está sólo en `getfronts/__init__.py` (`pyproject.toml` la lee de ahí).
 - Cada corrección se publica como patch: subir la versión, tests, commit con
   `Co-Authored-By`, etiqueta anotada `vX.Y.Z`, push, `gh release create --notes-file`
