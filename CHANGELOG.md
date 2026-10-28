@@ -5,6 +5,10 @@ Formato: `mayor.minor.patch`. Cada versión tiene su etiqueta de git y su
 
 ## [0.1.4] - 2026-10-28
 
+### Añadido
+- Varias carpetas de inicio y comodines: `getfronts '/internal1/Flac/Alaska*'` procesa todas
+  las carpetas que empiezan por Alaska, con un solo informe.
+
 ### Corregido
 - Sencillo en lugar de álbum: en *Zeit* de Rammstein el sencillo y el álbum tienen el mismo
   título y año, empataban a 1.0 y se descargaba la portada del sencillo. Ahora MusicBrainz,

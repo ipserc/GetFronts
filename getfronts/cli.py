@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import logging
 import sys
 from collections import Counter
@@ -28,7 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="Descarga las carátulas de los álbumes a partir de los metadatos de las pistas.",
         epilog=f"GetFronts {full_version()}",
     )
-    p.add_argument("root", type=Path, help="carpeta de inicio; se recorre todo su árbol")
+    p.add_argument("roots", nargs="+", metavar="carpeta",
+                   help="carpetas de inicio; se recorre todo su árbol. Admite comodines: "
+                        "'/internal1/Flac/Alaska*' procesa todas las que empiezan por Alaska")
     p.add_argument("-n", "--dry-run", action="store_true",
                    help="muestra lo que haría sin descargar imágenes ni escribir ficheros de portada")
     p.add_argument("-v", "--verbose", action="store_true", help="registro detallado")
@@ -74,15 +77,42 @@ def _describe(r: FolderResult) -> str:
     return line
 
 
+def expand_roots(patterns: list[str]) -> tuple[list[Path], list[str]]:
+    """Carpetas de inicio a partir de los argumentos, expandiendo comodines ``*``, ``?`` y ``[]``.
+
+    Devuelve las carpetas (sin repetir y sin las que ya están dentro de otra) y los argumentos que
+    no corresponden a ninguna carpeta.
+    """
+    found: list[Path] = []
+    missing: list[str] = []
+    for pattern in patterns:
+        expanded = str(Path(pattern).expanduser())
+        if glob.has_magic(expanded):
+            matches = [Path(m) for m in sorted(glob.glob(expanded)) if Path(m).is_dir()]
+        else:
+            matches = [Path(expanded)] if Path(expanded).is_dir() else []
+        if not matches:
+            missing.append(pattern)
+        found.extend(m.resolve() for m in matches)
+    roots: list[Path] = []
+    for root in sorted(set(found)):
+        if not any(root.is_relative_to(r) for r in roots):
+            roots.append(root)
+    return roots, missing
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose)
     log.info("GetFronts %s", full_version())
 
-    root = args.root.expanduser().resolve()
-    if not root.is_dir():
-        log.error("La ruta no existe o no es una carpeta: %s", root)
+    roots, missing = expand_roots(args.roots)
+    for pattern in missing:
+        log.error("La ruta no existe o no es una carpeta: %s", pattern)
+    if missing or not roots:
         return 2
+    if len(roots) > 1:
+        log.info("Carpetas de inicio (%d):\n  %s", len(roots), "\n  ".join(str(r) for r in roots))
     source_names = [s.strip().lower() for s in args.sources.split(",") if s.strip()]
     unknown = [s for s in source_names if s not in ALL_SOURCES]
     if unknown:
@@ -96,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     log.debug("Fuentes activas: %s", ", ".join(s.name for s in sources))
     finder = CoverFinder(sources, http, min_score=args.min_score, target_size=args.size)
     guesser = AlbumGuesser(cache, model=args.model, enabled=not args.no_ai)
-    options = Options(root=root, size=args.size, fit=args.fit, existing=args.existing,
+    options = Options(root=roots[0], size=args.size, fit=args.fit, existing=args.existing,
                       embed=args.embed, dry_run=args.dry_run)
     processor = FolderProcessor(options, guesser, finder)
 
@@ -104,12 +134,14 @@ def main(argv: list[str] | None = None) -> int:
         log.info("Modo simulación: no se descargará ni escribirá ninguna portada.")
     results: list[FolderResult] = []
     try:
-        for folder, tracks in find_audio_folders(root):
-            result = processor.process(folder, tracks)
-            results.append(result)
-            log.info(_describe(result))
-            if len(results) % 20 == 0:
-                cache.save()
+        for root in roots:
+            options.root = root  # la heurística por la ruta mide la profundidad desde aquí
+            for folder, tracks in find_audio_folders(root):
+                result = processor.process(folder, tracks)
+                results.append(result)
+                log.info(_describe(result))
+                if len(results) % 20 == 0:
+                    cache.save()
     except KeyboardInterrupt:
         log.warning("Interrumpido por el usuario; se guarda el informe parcial.")
     finally:

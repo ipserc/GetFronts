@@ -3,7 +3,7 @@
 Descarga automáticamente las carátulas (*fronts*) de los discos de una biblioteca musical,
 a partir de los metadatos de las propias canciones.
 
-Se le da una carpeta de inicio y recorre todo el árbol. En cada carpeta con pistas de audio
+Se le dan una o varias carpetas de inicio (admite comodines) y recorre todo su árbol. En cada carpeta con pistas de audio
 averigua el **Artista**, el **Álbum** y el **Año**, busca la carátula en internet, elige la de
 mejor calidad y la guarda junto a las pistas como PNG de 500x500:
 
@@ -103,7 +103,12 @@ getfronts --version
 python3 -m getfronts /ruta/a/la/musica                 # procesa todo el árbol
 python3 -m getfronts /ruta --dry-run -v                # simula y muestra el detalle
 python3 -m getfronts /ruta --existing overwrite --embed --report informe.json
+python3 -m getfronts '/internal1/Flac/Alaska*'          # todas las carpetas que empiezan por Alaska
+python3 -m getfronts /ruta/Rammstein /ruta/Muse        # varias carpetas, un solo informe
 ```
+
+Los comodines `*`, `?` y `[...]` funcionan con comillas (los expande GetFronts) y sin ellas
+(los expande la shell). Si un argumento no corresponde a ninguna carpeta, no se procesa nada.
 
 | Opción | Efecto |
 |---|---|
