@@ -64,7 +64,7 @@ def guess_from_path(folder: Path, root: Path) -> dict[str, str]:
         # Artista - Álbum (Año) / [Año]
         (r"^(?P<artist>.+?)\s+-\s+(?P<album>.+?)\s*[\(\[](?P<year>(?:19|20)\d\d)[\)\]]$", False),
         # Año - Álbum   (artista = carpeta padre); antes que "Artista - Álbum"
-        (r"^[\(\[]?(?P<year>(?:19|20)\d\d)[\)\]]?\s*[-.]?\s+(?P<album>.+)$", True),
+        (r"^[\(\[]?(?P<year>(?:19|20)\d\d)[\)\]]?(?:\s*[-.]\s*|\s+)(?P<album>.+)$", True),
         # Artista - Álbum
         (r"^(?P<artist>.+?)\s+-\s+(?P<album>.+)$", False),
         # Álbum (Año)   (artista = carpeta padre)

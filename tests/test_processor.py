@@ -166,3 +166,14 @@ def test_disc_mark_removed_from_album(tmp_path, make_track):
     assert result.album == "Liebe ist für alle da"
     assert result.cover_file == "Rammstein_Liebe_ist_für_alle_da_2009_Front.png"
     assert result.status == "downloaded"
+
+
+def test_untagged_year_dash_album_folder_without_ai(tmp_path, make_track):
+    folder = tmp_path / "Tom Petty and the Heartbreakers" / "2019-The Best of Everything CD2"
+    tracks = [make_track(folder / "01.mp3")]
+    proc, source, _ = _processor(tmp_path)          # sin etiquetas y sin IA: sólo la ruta
+    result = proc.process(folder, tracks)
+    assert result.data_source == "path"
+    assert (result.artist, result.album, result.year) == (
+        "Tom Petty and the Heartbreakers", "The Best of Everything", "2019")
+    assert source.queries == [("Tom Petty and the Heartbreakers", "The Best of Everything", "2019")]

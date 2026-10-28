@@ -109,3 +109,13 @@ def test_finder_retries_without_brackets():
     candidates = finder.find_candidates("Fleetwood Mac", "Rumours (Deluxe Edition)", "1977")
     assert source.queries == ["Rumours (Deluxe Edition)", "Rumours"]
     assert len(candidates) == 1 and candidates[0].score == 1.0
+
+
+def test_subtitled_title_is_accepted_but_exact_title_wins():
+    long = Candidate("a", "http://long", "Tom Petty & The Heartbreakers",
+                     "The Best of Everything: The Definitive Career Spanning Hits Collection 1976–2016", "2019")
+    assert score_candidate(long, "Tom Petty and the Heartbreakers", "The Best of Everything", "2019") >= 0.75
+
+    exact = Candidate("a", "http://v1", "Queen", "Greatest Hits", "1981")
+    vol2 = Candidate("a", "http://v2", "Queen", "Greatest Hits: Volume II", "1981")
+    assert score_candidate(exact, "Queen", "Greatest Hits", "1981") > score_candidate(vol2, "Queen", "Greatest Hits", "1981")

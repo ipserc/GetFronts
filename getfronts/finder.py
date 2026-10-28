@@ -9,7 +9,7 @@ from getfronts import UNKNOWN, VARIOUS_ARTISTS
 from getfronts.http import HttpClient
 from getfronts.imaging import open_image
 from getfronts.sources import Candidate, CoverSource
-from getfronts.textutil import is_various_artists, similarity, strip_brackets
+from getfronts.textutil import is_various_artists, similarity, strip_brackets, title_similarity
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def score_candidate(c: Candidate, artist: str, album: str, year: str) -> float:
         artist_sim = 1.0 if is_various_artists(c.artist) else 0.7
     else:
         artist_sim = similarity(artist, c.artist)
-    album_sim = similarity(album, c.album)
+    album_sim = title_similarity(album, c.album)
     if year == UNKNOWN or not c.year:
         year_sim = 0.5
     else:

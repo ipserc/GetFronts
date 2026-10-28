@@ -27,6 +27,11 @@ def test_guess_from_path_patterns():
     assert guess_from_path(Path("/music/1979 - Breakfast in America"), ROOT) == {
         "year": "1979", "album": "Breakfast in America"}
     assert guess_from_path(Path("/music/Misc"), ROOT) == {}
+    # Formato "Año-Álbum" sin espacios.
+    assert guess_from_path(Path("/music/Rammstein/2009-Liebe ist für alle da (CD 2)"), ROOT) == {
+        "artist": "Rammstein", "year": "2009", "album": "Liebe ist für alle da (CD 2)"}
+    assert guess_from_path(Path("/music/Tom Petty/2019-The Best of Everything CD2"), ROOT) == {
+        "artist": "Tom Petty", "year": "2019", "album": "The Best of Everything CD2"}
 
 
 class FakeMessages:

@@ -4,10 +4,12 @@ from getfronts.textutil import (
     clean_album_title,
     cover_filename,
     extract_year,
+    main_title,
     is_various_artists,
     sanitize_component,
     similarity,
     strip_brackets,
+    title_similarity,
 )
 
 
@@ -52,6 +54,7 @@ def test_various_artists_variants():
     ("Mellon Collie - CD2", "Mellon Collie"),
     ("Mellon Collie, Disc 2/2", "Mellon Collie"),
     ("Live CD.1", "Live"),
+    ("The Best of Everything CD2", "The Best of Everything"),
     # No son marcas de disco:
     ("Disco Inferno", "Disco Inferno"),
     ("Discovery", "Discovery"),
@@ -67,3 +70,20 @@ def test_strip_brackets():
     assert strip_brackets("Rumours (Deluxe Edition) [Remastered]") == "Rumours"
     assert strip_brackets("(What's the Story) Morning Glory?") == "Morning Glory?"
     assert strip_brackets("(Untitled)") == "(Untitled)"
+
+
+def test_main_title():
+    assert main_title("The Best of Everything: The Definitive Career Spanning Hits Collection") == \
+        "The Best of Everything"
+    assert main_title("The Best Of Everything - The Definitive Collection") == "The Best Of Everything"
+    assert main_title("Blink-182") == "Blink-182"          # guion sin espacios: no es subtítulo
+    assert main_title("Sgt. Pepper's Lonely Hearts Club Band") == "Sgt. Pepper's Lonely Hearts Club Band"
+
+
+def test_title_similarity_with_subtitles():
+    long = "The Best of Everything: The Definitive Career Spanning Hits Collection 1976–2016"
+    assert title_similarity("The Best of Everything", long) == 0.9
+    assert title_similarity(long, "The Best of Everything") == 0.9
+    assert title_similarity("Greatest Hits", "Greatest Hits") == 1.0
+    assert title_similarity("Greatest Hits", "Greatest Hits: Volume 2") == 0.9
+    assert title_similarity("Abbey Road", "Let It Be: Naked") < 0.6

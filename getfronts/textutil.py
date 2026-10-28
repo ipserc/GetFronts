@@ -24,6 +24,8 @@ _DISC_MARK_RE = re.compile(
     re.IGNORECASE,
 )
 _BRACKETS_RE = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]")
+_SUBTITLE_SEP_RE = re.compile(r"\s*:\s+|\s+[-–—]\s+")
+SUBTITLE_PENALTY = 0.9  # una coincidencia sólo del título principal vale algo menos que una exacta
 _VA_NAMES = {"various artists", "various", "va", "v a", "varios artistas", "varios", "artistes divers"}
 
 
@@ -66,6 +68,21 @@ def strip_brackets(value: str) -> str:
     """Quita todo lo que vaya entre paréntesis o corchetes: "Album (Deluxe Edition)" -> "Album"."""
     stripped = _BRACKETS_RE.sub("", value).strip(" -–:,")
     return stripped or value
+
+
+def main_title(value: str) -> str:
+    """Título sin subtítulo: "The Best of Everything: The Definitive..." -> "The Best of Everything"."""
+    head = _SUBTITLE_SEP_RE.split(value, maxsplit=1)[0].strip()
+    return head or value
+
+
+def title_similarity(ours: str, theirs: str) -> float:
+    """Como ``similarity``, pero admite que uno de los dos títulos lleve subtítulo."""
+    best = similarity(ours, theirs)
+    for a, b in ((ours, main_title(theirs)), (main_title(ours), theirs)):
+        if (a, b) != (ours, theirs):
+            best = max(best, SUBTITLE_PENALTY * similarity(a, b))
+    return best
 
 
 def is_various_artists(value: str | None) -> bool:
