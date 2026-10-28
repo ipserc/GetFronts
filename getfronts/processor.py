@@ -12,7 +12,7 @@ from getfronts.embed import embed_cover
 from getfronts.finder import CoverFinder
 from getfronts.imaging import to_cover_png
 from getfronts.metadata import FolderInfo, analyze_folder, has_embedded_cover
-from getfronts.textutil import canonical_artist, cover_filename, extract_year
+from getfronts.textutil import canonical_artist, clean_album_title, cover_filename, extract_year
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +101,8 @@ class FolderProcessor:
                 origins.append("ai")
         if not info.complete and _fill_missing(info, guess_from_path(folder, self.opt.root)):
             origins.append("path")
+        if info.album != UNKNOWN:
+            info.album = clean_album_title(info.album)
         return info, "+".join(origins) or "none"
 
     def process(self, folder: Path, tracks: list[Path]) -> FolderResult:

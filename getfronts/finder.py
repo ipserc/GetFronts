@@ -9,7 +9,7 @@ from getfronts import UNKNOWN, VARIOUS_ARTISTS
 from getfronts.http import HttpClient
 from getfronts.imaging import open_image
 from getfronts.sources import Candidate, CoverSource
-from getfronts.textutil import is_various_artists, similarity
+from getfronts.textutil import is_various_artists, similarity, strip_brackets
 
 log = logging.getLogger(__name__)
 
@@ -48,10 +48,20 @@ class CoverFinder:
         self.target_size = target_size
 
     def find_candidates(self, artist: str, album: str, year: str) -> list[Candidate]:
+        good = self._search_all(artist, album, year, query_album=album)
+        simple = strip_brackets(album)
+        if not good and simple != album:
+            # "Album (Deluxe Edition)" puede no encontrarse tal cual: se reintenta sin paréntesis.
+            log.debug("Sin resultados; se reintenta como %r", simple)
+            good = self._search_all(artist, album, year, query_album=simple)
+        return good
+
+    def _search_all(self, artist: str, album: str, year: str, query_album: str) -> list[Candidate]:
+        """Consulta todas las fuentes con ``query_album`` y puntúa contra el título real ``album``."""
         found: list[Candidate] = []
         for source in self.sources:
             try:
-                results = source.search(artist, album, None if year == UNKNOWN else year)
+                results = source.search(artist, query_album, None if year == UNKNOWN else year)
             except Exception as exc:  # una fuente caída no debe parar el proceso
                 log.warning("Fuente %s falló para %s - %s: %s", source.name, artist, album, exc)
                 continue

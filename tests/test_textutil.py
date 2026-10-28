@@ -1,9 +1,13 @@
+import pytest
+
 from getfronts.textutil import (
+    clean_album_title,
     cover_filename,
     extract_year,
     is_various_artists,
     sanitize_component,
     similarity,
+    strip_brackets,
 )
 
 
@@ -38,3 +42,28 @@ def test_various_artists_variants():
     assert is_various_artists("VA")
     assert is_various_artists("Varios Artistas")
     assert not is_various_artists("Vangelis")
+
+
+@pytest.mark.parametrize("title, expected", [
+    ("Liebe ist für alle da (CD 2)", "Liebe ist für alle da"),
+    ("The Wall [Disc 1]", "The Wall"),
+    ("The Wall (Disc 1 of 2)", "The Wall"),
+    ("Descanso dominical (Disco 2 - Bonus)", "Descanso dominical"),
+    ("Mellon Collie - CD2", "Mellon Collie"),
+    ("Mellon Collie, Disc 2/2", "Mellon Collie"),
+    ("Live CD.1", "Live"),
+    # No son marcas de disco:
+    ("Disco Inferno", "Disco Inferno"),
+    ("Discovery", "Discovery"),
+    ("Live CD 1999", "Live CD 1999"),
+    ("CD 2", "CD 2"),
+    ("The Dark Side of the Moon (2011 Remaster)", "The Dark Side of the Moon (2011 Remaster)"),
+])
+def test_clean_album_title(title, expected):
+    assert clean_album_title(title) == expected
+
+
+def test_strip_brackets():
+    assert strip_brackets("Rumours (Deluxe Edition) [Remastered]") == "Rumours"
+    assert strip_brackets("(What's the Story) Morning Glory?") == "Morning Glory?"
+    assert strip_brackets("(Untitled)") == "(Untitled)"

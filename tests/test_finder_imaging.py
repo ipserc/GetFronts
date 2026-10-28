@@ -87,3 +87,25 @@ def test_to_cover_png_handles_transparency_and_cmyk():
     buf = io.BytesIO()
     Image.new("CMYK", (400, 400)).save(buf, format="JPEG")
     assert _open(to_cover_png(buf.getvalue(), 500))[1] == (500, 500)
+
+
+class QuerySensitiveSource(CoverSource):
+    """Sólo encuentra el álbum si la consulta no lleva paréntesis."""
+    name = "qs"
+
+    def __init__(self):
+        self.queries = []
+
+    def search(self, artist, album, year):
+        self.queries.append(album)
+        if "(" in album:
+            return []
+        return [Candidate("qs", "http://x", artist, "Rumours (Deluxe Edition)", year)]
+
+
+def test_finder_retries_without_brackets():
+    source = QuerySensitiveSource()
+    finder = CoverFinder([source], FakeHttp(), 0.75, 500)
+    candidates = finder.find_candidates("Fleetwood Mac", "Rumours (Deluxe Edition)", "1977")
+    assert source.queries == ["Rumours (Deluxe Edition)", "Rumours"]
+    assert len(candidates) == 1 and candidates[0].score == 1.0

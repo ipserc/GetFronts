@@ -16,6 +16,14 @@ _EDITION_RE = re.compile(
     r"reissue|disc|cd\s*\d)[^\)\]]*[\)\]]",
     re.IGNORECASE,
 )
+_DISC_WORDS = r"(?:cd|disc|disk|disco|disque|dvd)"
+# Marcas de disco dentro de un título: "(CD 2)", "[Disc 1 of 2]", "(Disco 1 - Bonus)", "- CD2"...
+_DISC_MARK_RE = re.compile(
+    rf"\s*[\(\[]\s*{_DISC_WORDS}\s*\.?\s*\d{{1,2}}(?!\d)[^\)\]]*[\)\]]"
+    rf"|\s*[-–:,]?\s+{_DISC_WORDS}\s*\.?\s*\d{{1,2}}(?:\s*(?:of|de|/)\s*\d{{1,2}})?\s*$",
+    re.IGNORECASE,
+)
+_BRACKETS_RE = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]")
 _VA_NAMES = {"various artists", "various", "va", "v a", "varios artistas", "varios", "artistes divers"}
 
 
@@ -46,6 +54,18 @@ def similarity(a: str, b: str) -> float:
     if na == nb:
         return 1.0
     return SequenceMatcher(None, na, nb).ratio()
+
+
+def clean_album_title(album: str) -> str:
+    """Quita las marcas de disco: "Liebe ist für alle da (CD 2)" -> "Liebe ist für alle da"."""
+    cleaned = _DISC_MARK_RE.sub("", album).strip(" -–:,")
+    return cleaned or album
+
+
+def strip_brackets(value: str) -> str:
+    """Quita todo lo que vaya entre paréntesis o corchetes: "Album (Deluxe Edition)" -> "Album"."""
+    stripped = _BRACKETS_RE.sub("", value).strip(" -–:,")
+    return stripped or value
 
 
 def is_various_artists(value: str | None) -> bool:

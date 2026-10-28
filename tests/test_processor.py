@@ -154,3 +154,15 @@ def test_report_csv_and_json(tmp_path, album):
     assert rows[0]["path"] == str(folder) and rows[0]["artist"] == "Dire Straits"
     data = json.loads((tmp_path / "r.json").read_text())
     assert data[0]["status"] == "dry_run" and data[0]["year"] == "1985"
+
+
+def test_disc_mark_removed_from_album(tmp_path, make_track):
+    folder = tmp_path / "Rammstein" / "2009-Liebe ist für alle da (CD 2)"
+    tracks = [make_track(folder / "01.mp3")]
+    _tag(tracks[0], "Rammstein", "Liebe ist für alle da (CD 2)", "2009")
+    proc, source, _ = _processor(tmp_path)
+    result = proc.process(folder, tracks)
+    assert source.queries == [("Rammstein", "Liebe ist für alle da", "2009")]
+    assert result.album == "Liebe ist für alle da"
+    assert result.cover_file == "Rammstein_Liebe_ist_für_alle_da_2009_Front.png"
+    assert result.status == "downloaded"
