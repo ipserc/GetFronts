@@ -108,7 +108,9 @@ python3 -m getfronts /ruta/Rammstein /ruta/Muse        # varias carpetas, un sol
 ```
 
 Los comodines `*`, `?` y `[...]` funcionan con comillas (los expande GetFronts) y sin ellas
-(los expande la shell). Si un argumento no corresponde a ninguna carpeta, no se procesa nada.
+(los expande la shell). Si un argumento no existe o un comodín no encuentra ninguna carpeta, no se
+procesa nada. Los ficheros se ignoran con un aviso: sin comillas, `getfronts M*` también recibe
+`Max Richter.7z`.
 
 | Opción | Efecto |
 |---|---|

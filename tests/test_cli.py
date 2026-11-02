@@ -9,18 +9,34 @@ def _tree(tmp_path):
 
 def test_expand_roots_with_wildcard(tmp_path):
     _tree(tmp_path)
-    roots, missing = expand_roots([str(tmp_path / "Alaska*")])
+    roots, missing, not_dirs = expand_roots([str(tmp_path / "Alaska*")])
     assert [r.name for r in roots] == ["Alaska y Dinarama", "Alaska y los Pegamoides", "Alaska y otros"]
-    assert missing == []
+    assert missing == [] and not_dirs == []
 
 
 def test_expand_roots_dedupes_and_reports_missing(tmp_path):
     _tree(tmp_path)
     # La shell ya expandió una parte; se repite una carpeta y otra está dentro de la raíz.
-    roots, missing = expand_roots([str(tmp_path / "Amaral"), str(tmp_path / "Am*"), str(tmp_path),
+    roots, missing, _ = expand_roots([str(tmp_path / "Amaral"), str(tmp_path / "Am*"), str(tmp_path),
                                    str(tmp_path / "Zz*"), str(tmp_path / "no-existe")])
     assert roots == [tmp_path.resolve()]
     assert missing == [str(tmp_path / "Zz*"), str(tmp_path / "no-existe")]
+
+
+def test_expand_roots_ignores_files_expanded_by_the_shell(tmp_path):
+    # `getfronts M*` sin comillas: la shell pasa también los ficheros (Max Richter.7z).
+    _tree(tmp_path)
+    roots, missing, not_dirs = expand_roots([str(tmp_path / "Alaska y otros"), str(tmp_path / "Alaska.txt")])
+    assert [r.name for r in roots] == ["Alaska y otros"]
+    assert missing == [] and not_dirs == [str(tmp_path / "Alaska.txt")]
+
+
+def test_main_skips_files_and_processes_folders(tmp_path, caplog):
+    _tree(tmp_path)
+    code = main([str(tmp_path / "Amaral"), str(tmp_path / "Alaska.txt"), "--dry-run", "--no-ai", "--no-cache",
+                 "--report", str(tmp_path / "r.csv")])
+    assert code == 0
+    assert "Se ignora porque no es una carpeta" in caplog.text
 
 
 def test_main_fails_when_pattern_matches_nothing(tmp_path, caplog):

@@ -3,6 +3,13 @@
 Formato: `mayor.minor.patch`. Cada versión tiene su etiqueta de git y su
 [Release en GitHub](https://github.com/ipserc/GetFronts/releases).
 
+## [0.1.6] - 2026-11-02
+
+### Corregido
+- `getfronts M*` sin comillas no procesaba nada si la shell pasaba también algún fichero
+  (`La ruta no existe o no es una carpeta: Max Richter.7z`). Ahora los ficheros se ignoran con un
+  aviso y se procesan las carpetas. Una ruta inexistente sigue deteniendo la ejecución.
+
 ## [0.1.5] - 2026-10-28
 
 ### Añadido

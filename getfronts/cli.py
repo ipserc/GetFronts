@@ -173,20 +173,28 @@ def _describe(r: FolderResult) -> str:
     return line
 
 
-def expand_roots(patterns: list[str]) -> tuple[list[Path], list[str]]:
+def expand_roots(patterns: list[str]) -> tuple[list[Path], list[str], list[str]]:
     """Carpetas de inicio a partir de los argumentos, expandiendo comodines ``*``, ``?`` y ``[]``.
 
-    Devuelve las carpetas (sin repetir y sin las que ya están dentro de otra) y los argumentos que
-    no corresponden a ninguna carpeta.
+    Devuelve las carpetas (sin repetir y sin las que ya están dentro de otra), los argumentos que
+    no existen o cuyo comodín no encuentra ninguna carpeta, y los que existen pero no son carpetas.
+    Estos últimos se ignoran: con ``getfronts M*`` sin comillas la shell también pasa los ficheros
+    que empiezan por M (``Max Richter.7z``).
     """
     found: list[Path] = []
     missing: list[str] = []
+    not_dirs: list[str] = []
     for pattern in patterns:
         expanded = str(Path(pattern).expanduser())
         if glob.has_magic(expanded):
             matches = [Path(m) for m in sorted(glob.glob(expanded)) if Path(m).is_dir()]
+        elif Path(expanded).is_dir():
+            matches = [Path(expanded)]
         else:
-            matches = [Path(expanded)] if Path(expanded).is_dir() else []
+            matches = []
+            if Path(expanded).exists():
+                not_dirs.append(pattern)
+                continue
         if not matches:
             missing.append(pattern)
         found.extend(m.resolve() for m in matches)
@@ -194,7 +202,7 @@ def expand_roots(patterns: list[str]) -> tuple[list[Path], list[str]]:
     for root in sorted(set(found)):
         if not any(root.is_relative_to(r) for r in roots):
             roots.append(root)
-    return roots, missing
+    return roots, missing, not_dirs
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -202,7 +210,9 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging(args.verbose)
     log.info("GetFronts %s", full_version())
 
-    roots, missing = expand_roots(args.roots)
+    roots, missing, not_dirs = expand_roots(args.roots)
+    for pattern in not_dirs:
+        log.warning("Se ignora porque no es una carpeta: %s", pattern)
     for pattern in missing:
         log.error("La ruta no existe o no es una carpeta: %s", pattern)
     if missing or not roots:
